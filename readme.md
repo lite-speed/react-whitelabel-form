@@ -1,6 +1,17 @@
-# React Whitelabel Form
+# React Whitelabel Form (alpha)
 
 Let's you easily create strongly typed forms you can customize to your particular use case.
+
+# Objectives
+
+* inline validation
+* performance
+* less verbose
+* don't use wrapper components (hard to read)
+* build in state management specific to the form
+* types all the way
+* ability to handle any existing existing comp libraries
+* makes it much easier to have uniformity with your forms (since it creates the "blessed" components)
 
 ## Example
 
@@ -11,40 +22,17 @@ import {
   createWhitelabelComponentWithOptions,
 } from "react-whitelabel-form";
 
-type InputProps = React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
-type SelectProps = React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement>;
-
 const useAcmeForm = createUseWhitelabelForm({
-  Select: createWhitelabelComponentWithOptions<{ label: string } & SelectProps, { label: string; key: string }>((p) => {
-    const { onChangeValue, onChange, ...rest } = p;
-    return (
-      <select
-        {...rest}
-        value={p.options.find((o) => o.key === p.value)?.key}
-        onChange={(e) => {
-          p.onChangeValue(p.options.find((o) => o.key === e.target.value)?.value);
-          onChange?.(e);
-        }}
-      >
-        {p.options.map((o) => (
-          <option key={o.key} value={o.key}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    );
-  }),
-  Input: createWhitelabelComponent<{ label: string } & InputProps, string>((p) => {
-    const { label, onChangeValue, onChange, errors, ...rest } = p;
-
+  TextInput: createWhitelabelComponent<{ label: string  }, string>((p) => {
+    const { onChangeValue, errors, onBlur, onFocus, value } = p;
     return (
       <div>
-        <label>{label}</label>
         <input
-          {...rest}
+          value={value}
+          onBlur={onBlur}
+          onFocus={onFocus}
           onChange={(e) => {
-            p.onChangeValue(e.target.value);
-            onChange?.(e);
+            onChangeValue(e.target.value);
           }}
         />
         {errors.length ? <div>{errors[0]}</div> : null}
@@ -54,35 +42,22 @@ const useAcmeForm = createUseWhitelabelForm({
 });
 
 function App() {
-  const { Input, Select, store, useStoreValue } = useAcmeForm({
-    initState: { text: "", selectVal: { complexVal: 123 } },
+  const { TextInput, store, useStoreValue } = useAcmeForm({
+    initState: { text1: "", text2: "Hello" }
   });
 
   return (
-    <form
-      onSubmit={async (e) => {
+    <div>
+      <form onSubmit={e => {
+        console.log(store.get());
         e.preventDefault();
-        if (!store.validate()) {
-          return;
-        }
-
-        const data = store.get();
-        //Do something with the data...
-
-        store.reset();
-      }}
-    >
-      <Select
-        options={[
-          { key: "1", label: "Option 1", value: { complexVal: 123 } },
-          { key: "2", label: "Option 2", value: { complexVal: 234 } },
-          { key: "3", label: "Option 3", value: { complexVal: 345 } },
-        ]}
-        field={(s) => s.selectVal}
-        label={"Select Option"}
-      />
-      <Input required field={(s) => s.text} label="Loan Id" />
-    </form>
+        store.validate()
+      }}>
+        <TextInput label="Cool Label 1" field={(s) => s.text1}     />
+        <TextInput label="Cool Label 2" field={(s) => s.text2}    />
+        <input type={'submit'}/>
+      </form>
+    </div>
   );
 }
 ```

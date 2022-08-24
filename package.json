@@ -1,6 +1,6 @@
 {
   "name": "react-whitelabel-form",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "./dist/index.js",
   "types": "./src/index.ts",
@@ -8,6 +8,10 @@
     "dev": "tsc -w --preserveWatchOutput",
     "build": "tsc",
     "build-dev": "pnpm build"
+  },
+  "homepage": "https://github.com/lite-speed/react-whitelabel-form#readme",
+  "bugs": {
+    "url": "https://github.com/lite-speed/react-whitelabel-form/issues"
   },
   "keywords": [],
   "author": "",
