@@ -8,9 +8,7 @@ export type ReValidateMode = "onChange" | "onBlur" | "onValidate";
 
 export type CreateUseWhitelabelFormReturnValue<Components extends ComponentsMap, State extends object> = {
   [K in keyof Components]: Components[K] extends WhiteLabelComponentWrapper<any, any>
-    ? WhitelabelComponent<Components[K]["__ExtraProps"], State, Components[K]["__Value"]>
-    : Components[K] extends WhiteLabelComponentWithOptionsWrapper<any, any>
-    ? WhitelabelComponentWithOptions<Components[K]["__ExtraProps"], State, Components[K]["__ExtraOptionProps"]>
+    ? WhitelabelComponent<Components[K]["__CustomProps"], State, Components[K]["__Value"]>
     : never;
 } & {
   store: Simplify<Omit<FormStore<State>, "useStoreValue">>;
@@ -23,70 +21,79 @@ export type UseFormOpts<State extends object> = {
   reValidateMode?: ReValidateMode;
 };
 
-export type ComponentsMap = Record<
-  string,
-  WhiteLabelComponentWrapper<any, any> | WhiteLabelComponentWithOptionsWrapper<any, any>
->;
+export type ComponentsMap = Record<string, WhiteLabelComponentWrapper<any, any>>;
 
-export type AuthorFacingWhitelabelComponent<ExtraProps extends object, Value> = (
-  a: MergeAndSimplify<
-    ExtraProps,
-    {
-      errors: string[];
-      onFocus: () => void;
-      onBlur: () => void;
-      value: Value;
-      onChangeValue: (newVal: Value) => void;
-    }
-  >,
-) => JSX.Element | null;
+export type AuthorFacingWhitelabelComponent<CustomProps extends object, Value> = (a: {
+  customProps: Simplify<
+    Omit<
+      CustomProps,
+      keyof (RequiredAuthorFormProps<Value> &
+        BaseUnmergedWhitelabelComponentProps<any, any> &
+        StringWhiteLabelComponentProps &
+        NumericWhiteLabelComponentProps<any>)
+    >
+  >;
+  requiredProps: RequiredAuthorFormProps<Value>;
+  internalReservedProps: InternalReservedProps<Value>;
+}) => JSX.Element | null;
 
-export type BaseWhiteLabelComponentProps<ExtraProps extends object, State extends object, Value> = MergeAndSimplify<
-  ExtraProps,
-  {
-    field: (s: State) => Value;
-    defaultValue?: Value;
-    mode?: ValidateMode;
-    reValidateMode?: ReValidateMode;
-    validate?: (currVal: Value) => null | undefined | false | "" | string | string[];
-    required?: true | string;
-    max?: Value | [Value, string];
-    min?: Value | [Value, string];
-  }
+type BaseUnmergedWhitelabelComponentProps<State, Value> = {
+  field: (s: State) => Value;
+  defaultValue?: Value;
+  mode?: ValidateMode;
+  reValidateMode?: ReValidateMode;
+  validate?: Validator<Value> | Validator<Value>[];
+  required?: true | string;
+};
+
+export type BaseWhiteLabelComponentProps<CustomProps extends object, State extends object, Value> = MergeAndSimplify<
+  CustomProps,
+  BaseUnmergedWhitelabelComponentProps<State, Value>
 >;
 
 export type StringWhiteLabelComponentProps = {
-  isEmail?: true | string;
-  isUrl?: true | string;
-  pattern?: RegExp | [RegExp, string];
+  pattern?: PatternType | [PatternType, string];
   minLength?: number | [number, string];
   maxLength?: number | [number, string];
 };
 
-export type WhitelabelComponentProps<ExtraProps extends object, State extends object, Value> = Value extends string
-  ? BaseWhiteLabelComponentProps<ExtraProps, State, Value> & StringWhiteLabelComponentProps
-  : BaseWhiteLabelComponentProps<ExtraProps, State, Value>;
+export type NumericWhiteLabelComponentProps<Value extends number | Date> = {
+  max?: Value | [Value, string];
+  min?: Value | [Value, string];
+};
 
-export type WhitelabelComponent<ExtraProps extends object, State extends object, Value> = (
-  a: WhitelabelComponentProps<ExtraProps, State, Value>,
+export type WhitelabelComponentProps<CustomProps extends object, State extends object, Value> = Value extends string
+  ? MergeAndSimplify<BaseWhiteLabelComponentProps<CustomProps, State, Value>, StringWhiteLabelComponentProps>
+  : Value extends number | Date
+  ? MergeAndSimplify<BaseWhiteLabelComponentProps<CustomProps, State, Value>, NumericWhiteLabelComponentProps<Value>>
+  : BaseWhiteLabelComponentProps<CustomProps, State, Value>;
+
+export type WhitelabelComponent<CustomProps extends object, State extends object, Value> = (
+  a: WhitelabelComponentProps<CustomProps, State, Value>,
 ) => JSX.Element | null;
 
-export type WhitelabelComponentWithOptions<
-  ExtraProps extends object,
-  State extends object,
-  ExtraOptionProps extends object,
-> = <Value>(
-  a: WhitelabelComponentProps<MergeAndSimplify<ExtraProps, OptionsType<Value, ExtraOptionProps>>, State, Value>,
-) => JSX.Element | null;
-
-export type WhiteLabelComponentWrapper<Value, ExtraProps extends object> = {
-  __ExtraProps: ExtraProps;
+export type WhiteLabelComponentWrapper<Value, CustomProps extends object> = {
+  __CustomProps: CustomProps;
   __Value: Value;
 };
 
-export type WhiteLabelComponentWithOptionsWrapper<ExtraProps extends object, ExtraOptionProps extends object = {}> = {
-  __ExtraProps: ExtraProps;
-  __ExtraOptionProps: ExtraOptionProps;
+export type PatternType = "url" | "email" | "minimallySecurePassword" | RegExp;
+
+type RequiredAuthorFormProps<Value> = {
+  errors: string[];
+  onFocus: () => void;
+  onBlur: () => void;
+  value: Value | undefined;
+  onChangeValue: (newVal: Value | undefined) => void;
 };
 
-export type OptionsType<Value, ExtraOptionProps extends object> = { options: ({ value: Value } & ExtraOptionProps)[] };
+type InternalReservedProps<Value> = Value extends string
+  ? MergeAndSimplify<BaseUnmergedWhitelabelComponentProps<Record<string, any>, Value>, StringWhiteLabelComponentProps>
+  : Value extends number | Date
+  ? MergeAndSimplify<
+      BaseUnmergedWhitelabelComponentProps<Record<string, any>, Value>,
+      NumericWhiteLabelComponentProps<Value>
+    >
+  : BaseUnmergedWhitelabelComponentProps<Record<string, any>, Value>;
+
+type Validator<Value> = (currVal: Value) => null | undefined | false | "" | string | string[];

@@ -8,6 +8,8 @@ export type DeepPartial<T> = UnionToIntersection<DistributivePartial<T>>;
 
 export const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]{2,10}$/;
 
+export const MINIMAL_PASSWORD = /^(?=.*[0-9])(?=.*[a-z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+
 export const LINK_REGEX =
   /\b(https?:\/\/)?(([-a-z0-9_]{2,50}\.))+[a-zA-Z0-9]{2,6}\b([-a-zA-Z0-9()@:%_\+.~#?$!&/=]*)(\b)?/im;
 

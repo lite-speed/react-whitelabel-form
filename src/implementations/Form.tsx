@@ -4,28 +4,20 @@ import {
   AuthorFacingWhitelabelComponent,
   ComponentsMap,
   ValidateMode,
-  OptionsType,
   ReValidateMode,
   StringWhiteLabelComponentProps,
   UseFormOpts,
   WhitelabelComponentProps,
-  WhiteLabelComponentWithOptionsWrapper,
   WhiteLabelComponentWrapper,
   CreateUseWhitelabelFormReturnValue,
 } from "../types/Form.js";
 import { SimpleStore } from "../types/Store.js";
-import { EMAIL_REGEX, LINK_REGEX, useId } from "../utils/utils.js";
+import { EMAIL_REGEX, LINK_REGEX, MINIMAL_PASSWORD, useId } from "../utils/utils.js";
 import { createSimpleStore } from "./Store.js";
 
-export function createWhitelabelComponent<ExtraProps extends object, Value>(
-  Comp: AuthorFacingWhitelabelComponent<ExtraProps, Value>,
-): WhiteLabelComponentWrapper<Value, ExtraProps> {
-  return Comp as any;
-}
-
-export function createWhitelabelComponentWithOptions<ExtraProps extends object, ExtraOptionProps extends object = {}>(
-  Comp: AuthorFacingWhitelabelComponent<ExtraProps & OptionsType<unknown, ExtraOptionProps>, unknown>,
-): WhiteLabelComponentWithOptionsWrapper<ExtraProps, ExtraOptionProps> {
+export function createWhitelabelComponent<Value, CustomProps extends object>(
+  Comp: AuthorFacingWhitelabelComponent<CustomProps, Value>,
+): WhiteLabelComponentWrapper<Value, CustomProps> {
   return Comp as any;
 }
 
@@ -113,7 +105,7 @@ function createUseFormReturnValue(
 type InternalConsumerComponentProps = WhitelabelComponentProps<Record<string, any>, Record<string, any>, any> &
   StringWhiteLabelComponentProps;
 
-function createWhiteLabelComponentForForm(formProps: {
+function createWhiteLabelComponentForForm(requiredProps: {
   currentValidatorsByComponentId: CurrentValidatorsByComponentId;
   uiStore: UIStore;
   dataStore: SimpleStore<Record<string, any>>;
@@ -123,35 +115,35 @@ function createWhiteLabelComponentForForm(formProps: {
 }) {
   const ConsumerComponent: (compProps: InternalConsumerComponentProps) => JSX.Element = (compProps) => {
     const formControlId = useId();
-    const errors = formProps.uiStore.useStoreValue((b) => b[formControlId]?.errors) ?? [];
+    const errors = requiredProps.uiStore.useStoreValue((b) => b[formControlId]?.errors) ?? [];
     const fieldPath = detectAccessedPath(compProps.field as any);
 
     const maybeValidateThisFormControl = (opts?: { force?: boolean; silent?: boolean }) =>
       maybeValidateFormControl(
         {
-          ...formProps,
+          ...requiredProps,
           ...compProps,
           formControlId,
           fieldPath,
-          mode: formProps.mode ?? compProps.mode,
-          reValidateMode: formProps.revalidateMode ?? compProps.reValidateMode,
+          mode: requiredProps.mode ?? compProps.mode,
+          reValidateMode: requiredProps.revalidateMode ?? compProps.reValidateMode,
         },
         opts,
       );
+
     /** Lazily set value using defaultValue*/
-    let value = formProps.dataStore.useStoreValue((a) => _.get(a, fieldPath));
+    let value = requiredProps.dataStore.useStoreValue((a) => _.get(a, fieldPath));
     // //I'm not 110% sure, but I think it's safe to lazily set the form defaultValue the first time the form control is rendered.
     if (typeof value === "undefined" && typeof compProps.defaultValue !== "undefined") {
-      (formProps.dataStore.setPath as any)(fieldPath, compProps.defaultValue, { silent: true }); //Use the secret "silent" flag on setPath so it doesn't trigger a re-render
+      (requiredProps.dataStore.setPath as any)(fieldPath, compProps.defaultValue, { silent: true }); //Use the secret "silent" flag on setPath so it doesn't trigger a re-render
       value = compProps.defaultValue;
     }
 
     /*** Propagate validator function to the parent form...***/
-    //Hop
     useEffect(() => {
-      formProps.currentValidatorsByComponentId.set(formControlId, maybeValidateThisFormControl);
+      requiredProps.currentValidatorsByComponentId.set(formControlId, maybeValidateThisFormControl);
       return () => {
-        formProps.currentValidatorsByComponentId.delete(formControlId);
+        requiredProps.currentValidatorsByComponentId.delete(formControlId);
       };
     }, [fieldPath.join("")]);
 
@@ -174,8 +166,6 @@ function createWhiteLabelComponentForForm(formProps: {
       reValidateMode,
       validate,
       required,
-      isEmail,
-      isUrl,
       max,
       maxLength,
       minLength,
@@ -183,45 +173,58 @@ function createWhiteLabelComponentForForm(formProps: {
       pattern,
       onFocus,
       onBlur,
-      ...extraProps
+      ...customProps
     } = compProps;
 
-    const AuthorComponent = formProps.AuthorComponent;
+    const AuthorComponent = requiredProps.AuthorComponent;
 
     return (
       <AuthorComponent
-        {...extraProps}
-        errors={errors}
-        onBlur={() => {
-          formProps.uiStore.mutate((a) => {
-            if (!a[formControlId]?.hasBlurred) {
-              a[formControlId] = a[formControlId] || {};
-              a[formControlId]!.hasBlurred = true;
-            }
-          });
-          maybeValidateThisFormControl();
+        customProps={customProps}
+        internalReservedProps={{
+          field,
+          defaultValue,
+          maxLength,
+          minLength,
+          mode,
+          pattern,
+          required,
+          reValidateMode,
+          validate,
+        }}
+        requiredProps={{
+          errors,
+          value,
+          onBlur: () => {
+            requiredProps.uiStore.mutate((a) => {
+              if (!a[formControlId]?.hasBlurred) {
+                a[formControlId] = a[formControlId] || {};
+                a[formControlId]!.hasBlurred = true;
+              }
+            });
+            maybeValidateThisFormControl();
 
-          if (typeof onBlur === "function") {
-            onBlur();
-          }
-        }}
-        onFocus={() => {
-          formProps.uiStore.mutate((a) => {
-            if (!a[formControlId]?.hasFocused) {
-              a[formControlId] = a[formControlId] || {};
-              a[formControlId]!.hasFocused = true;
+            if (typeof onBlur === "function") {
+              onBlur();
             }
-          });
+          },
+          onFocus: () => {
+            requiredProps.uiStore.mutate((a) => {
+              if (!a[formControlId]?.hasFocused) {
+                a[formControlId] = a[formControlId] || {};
+                a[formControlId]!.hasFocused = true;
+              }
+            });
 
-          if (typeof onFocus === "function") {
-            onFocus();
-          }
+            if (typeof onFocus === "function") {
+              onFocus();
+            }
+          },
+          onChangeValue: (newVal) => {
+            requiredProps.dataStore.setPath(fieldPath, newVal);
+            maybeValidateThisFormControl();
+          },
         }}
-        onChangeValue={(newVal) => {
-          formProps.dataStore.setPath(fieldPath, newVal);
-          maybeValidateThisFormControl();
-        }}
-        value={value}
       />
     );
   };
@@ -266,12 +269,15 @@ function maybeValidateFormControl(
   const errorStrings: string[] = [];
 
   if (c.validate) {
-    const val = c.validate(currValue);
-    if (val instanceof Array) {
-      errorStrings.push(...val);
-    } else if (val) {
-      errorStrings.push(val);
-    }
+    const validators = c.validate instanceof Array ? c.validate : [c.validate];
+    validators.forEach((validator) => {
+      const val = validator(currValue);
+      if (val instanceof Array) {
+        errorStrings.push(...val);
+      } else if (val) {
+        errorStrings.push(val);
+      }
+    });
   }
 
   if (c.required) {
@@ -280,67 +286,66 @@ function maybeValidateFormControl(
     }
   }
 
-  if (c.isEmail) {
-    if (!EMAIL_REGEX.test(currValue)) {
-      errorStrings.push(typeof c.isEmail === "string" && c.isEmail ? c.isEmail : "Must be email");
-    }
-  }
-
-  if (c.isUrl) {
-    if (!LINK_REGEX.test(currValue)) {
-      errorStrings.push(typeof c.isUrl === "string" && c.isUrl ? c.isUrl : "Must be valid url");
-    }
-  }
-
-  if (c.minLength) {
-    if (typeof currValue === "string" || currValue instanceof Array) {
+  if (c.minLength && typeof currValue !== "undefined") {
+    if (typeof currValue === "string") {
       const thisMinLength = typeof c.minLength === "number" ? c.minLength : c.minLength[0];
       if (currValue.length < thisMinLength) {
         if (c.minLength instanceof Array) {
           errorStrings.push(c.minLength[1]);
         } else {
-          errorStrings.push(
-            currValue instanceof Array
-              ? `Must select at least ${thisMinLength} items`
-              : `Must have at least ${thisMinLength} characters`,
-          );
+          errorStrings.push(`Must have at least ${thisMinLength} characters`);
         }
       }
     }
   }
 
-  if (c.maxLength) {
-    if (typeof currValue === "string" || currValue instanceof Array) {
+  if (c.maxLength && typeof currValue !== "undefined") {
+    if (typeof currValue === "string") {
       const thisMaxLength = typeof c.maxLength === "number" ? c.maxLength : c.maxLength[0];
       if (currValue.length > thisMaxLength) {
         if (c.maxLength instanceof Array) {
           errorStrings.push(c.maxLength[1]);
         } else {
-          errorStrings.push(
-            currValue instanceof Array
-              ? `Cannot select more than ${thisMaxLength} items`
-              : `Must be less than ${thisMaxLength} characters`,
-          );
+          errorStrings.push(`Must be less than ${thisMaxLength} characters`);
         }
       }
     }
   }
 
-  if (c.pattern) {
+  if (c.pattern && typeof currValue !== "undefined") {
     const thisPattern = c.pattern instanceof Array ? c.pattern[0] : c.pattern;
-    if (!thisPattern.test(currValue)) {
-      errorStrings.push(c.pattern instanceof Array ? c.pattern[1] : "Invalid pattern");
+
+    if (thisPattern === "email") {
+      if (!EMAIL_REGEX.test(currValue)) {
+        errorStrings.push(c.pattern instanceof Array ? c.pattern[1] : "Must be email");
+      }
+    } else if (thisPattern === "url") {
+      if (!LINK_REGEX.test(currValue)) {
+        errorStrings.push(c.pattern instanceof Array ? c.pattern[1] : "Must be a valid url");
+      }
+    } else if (thisPattern === "minimallySecurePassword") {
+      if (!MINIMAL_PASSWORD.test(currValue)) {
+        errorStrings.push(
+          c.pattern instanceof Array
+            ? c.pattern[1]
+            : "Minimum of 8 characters with at least one number, lowercase, uppercase, and special character",
+        );
+      }
+    } else {
+      if (!thisPattern.test(currValue)) {
+        errorStrings.push(c.pattern instanceof Array ? c.pattern[1] : "Invalid pattern");
+      }
     }
   }
 
-  if (c.min) {
+  if (c.min && typeof currValue !== "undefined") {
     const thisMin = c.min instanceof Array ? c.min[0] : c.min;
     if (currValue < thisMin) {
       errorStrings.push(c.min instanceof Array ? c.min[1] : `Must be more than ${thisMin}`);
     }
   }
 
-  if (c.max) {
+  if (c.max && typeof currValue !== "undefined") {
     const thisMax = c.max instanceof Array ? c.max[0] : c.max;
     if (currValue > thisMax) {
       errorStrings.push(c.max instanceof Array ? c.max[1] : `Must be less than ${thisMax}`);
