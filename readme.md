@@ -62,8 +62,8 @@ const useAcmeForm = createUseWhitelabelForm({
         </div>
         {p.requiredProps.errors ? (
           <div>
-            {p.requiredProps.errors.map((e) => {
-              return <div>{e}</div>;
+            {p.requiredProps.errors.map((e, index) => {
+              return <div key={index}>{e}</div>;
             })}
           </div>
         ) : null}
@@ -95,8 +95,8 @@ const useAcmeForm = createUseWhitelabelForm({
         </div>
         {p.requiredProps.errors ? (
           <div>
-            {p.requiredProps.errors.map((e) => {
-              return <div>{e}</div>;
+            {p.requiredProps.errors.map((e, index) => {
+              return <div key={index}>{e}</div>;
             })}
           </div>
         ) : null}
