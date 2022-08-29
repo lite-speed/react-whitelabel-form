@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  '@types/lodash': 4.14.182
+  '@types/lodash': 4.14.183
   '@types/react': 18.0.15
   '@types/use-sync-external-store': 0.0.3
   immer: 9.0.15
@@ -19,7 +19,7 @@ dependencies:
   use-sync-external-store: 1.2.0_react@18.2.0
 
 devDependencies:
-  '@types/lodash': 4.14.182
+  '@types/lodash': 4.14.183
   '@types/react': 18.0.15
   '@types/use-sync-external-store': 0.0.3
   react: 18.2.0
@@ -1251,8 +1251,8 @@ packages:
       '@types/istanbul-lib-report': 3.0.0
     dev: true
 
-  /@types/lodash/4.14.182:
-    resolution: {integrity: sha512-/THyiqyQAP9AfARo4pF+aCGcyiQ94tX/Is2I7HofNRqoYLgN1PBoOWu2/zTA5zMxzP5EFutMtWtGAFRKUe961Q==}
+  /@types/lodash/4.14.183:
+    resolution: {integrity: sha512-UXavyuxzXKMqJPEpFPri6Ku5F9af6ZJXUneHhvQJxavrEjuHkFp2YnDWHcxJiG7hk8ZkWqjcyNeW1s/smZv5cw==}
     dev: true
 
   /@types/node/18.7.6:
