@@ -1,9 +1,10 @@
 {
   "name": "react-whitelabel-form",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "",
   "main": "./dist/index.js",
-  "types": "./src/index.ts",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "dev": "tsc -w --preserveWatchOutput",
     "build": "tsc",

@@ -13,16 +13,6 @@ Let's you easily create strongly typed forms you can customize to your particula
 * ability to handle any existing existing comp libraries
 * makes it much easier to have uniformity with your forms (since it creates the "blessed" components)
 
-## Install
-
-```
-yarn add react-whitelabel-form
-OR
-pnpm install react-whitelabel-form
-OR
-npm install react-whitelabel-form
-```
-
 ## Example
 
 ```tsx
