@@ -171,8 +171,6 @@ function createWhiteLabelComponentForForm(requiredProps: {
       minLength,
       min,
       pattern,
-      onFocus,
-      onBlur,
       ...customProps
     } = compProps;
 
@@ -203,10 +201,6 @@ function createWhiteLabelComponentForForm(requiredProps: {
               }
             });
             maybeValidateThisFormControl();
-
-            if (typeof onBlur === "function") {
-              onBlur();
-            }
           },
           onFocus: () => {
             requiredProps.uiStore.mutate((a) => {
@@ -215,10 +209,6 @@ function createWhiteLabelComponentForForm(requiredProps: {
                 a[formControlId]!.hasFocused = true;
               }
             });
-
-            if (typeof onFocus === "function") {
-              onFocus();
-            }
           },
           onChangeValue: (newVal) => {
             requiredProps.dataStore.setPath(fieldPath, newVal);

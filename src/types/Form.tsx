@@ -27,8 +27,7 @@ export type AuthorFacingWhitelabelComponent<CustomProps extends object, Value> =
   customProps: Simplify<
     Omit<
       CustomProps,
-      keyof (RequiredAuthorFormProps<Value> &
-        BaseUnmergedWhitelabelComponentProps<any, any> &
+      keyof (BaseUnmergedWhitelabelComponentProps<any, any> &
         StringWhiteLabelComponentProps &
         NumericWhiteLabelComponentProps<any>)
     >
